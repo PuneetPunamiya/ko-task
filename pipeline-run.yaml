@@ -1,0 +1,28 @@
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: ko-pipeline-run
+spec:
+  pipelineRef:
+    name: ko-pipeline
+  serviceAccountName: secret-service-account
+  workspaces:
+    - name: kubeDir
+      emptyDir: {}
+    - name: shared-workspaces
+      volumeClaimTemplate:
+        spec:
+          accessModes:
+            - ReadWriteOnce # access mode may affect how you can use this volume in parallel tasks
+          resources:
+            requests:
+              storage: 500Mi
+    - name: temp
+      emptyDir: {}
+      # volumeClaimTemplate:
+      #   spec:
+      #     accessModes:
+      #       - ReadWriteOnce # access mode may affect how you can use this volume in parallel tasks
+      #     resources:
+      #       requests:
+      #         storage: 10Mi

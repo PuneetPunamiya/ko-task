@@ -1,0 +1,74 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ko-pipeline
+spec:
+  workspaces:
+    - name: shared-workspaces
+    - name: kubeDir
+    - name: temp
+  tasks:
+    - name: git-clone
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspaces
+      params:
+        - name: url
+          value: https://github.com/tektoncd/hub
+        - name: subdirectory
+          value: ''
+        - name: deleteExisting
+          value: 'true'
+
+    - name: ko-00-config
+      taskRef:
+        name: ko
+      workspaces:
+        - name: source
+          workspace: shared-workspaces
+        - name: temp
+          workspace: temp
+      params:
+        - name: imageRegistry
+          value: quay.io/ppunamiy
+        - name: contextDir
+          value: 'api/config'
+        - name: script
+          value: ko resolve -f 00-config > $(workspaces.temp.path)/00-config.yaml
+      runAfter:
+        - git-clone
+
+    - name: kubectl-config
+      taskRef:
+        name: kubernetes-actions
+      workspaces:
+        - name: manifest-dir
+          workspace: temp
+        - name: kubeconfig-dir
+          workspace: kubeDir
+      params:
+        - name: script
+          value: |
+            ls
+            cat 00-config.yaml
+            kubectl apply -f 00-config.yaml
+      runAfter:
+        - ko-00-config
+
+    - name: ko-config
+      taskRef:
+        name: ko
+      workspaces:
+        - name: source
+          workspace: shared-workspaces
+      params:
+        - name: imageRegistry
+          value: quay.io/skopeotest
+        - name: contextDir
+          value: 'api'
+        - name: script
+          value: ko apply -f config
+      runAfter:
+        - ko-00-config

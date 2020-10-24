@@ -1,0 +1,36 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: ko
+spec:
+  params:
+    - name: imageRegistry
+      type: string
+    - name: contextDir
+      type: string
+    - name: script
+      type: string
+  workspaces:
+    - name: source
+    - name: temp
+    - name: kubeconfig
+      optional: true
+  steps:
+    - name: ko
+      image: gcr.io/tekton-releases/dogfooding/ko
+      workingDir: $(workspaces.source.path)/$(params.contextDir)
+      env:
+        - name: KO_DOCKER_REPO
+          value: $(params.imageRegistry)
+        - name: GOPATH
+          value: /workspace/go
+        - name: GO111MODULE
+          value: 'off'
+      # args:
+      #   - $(params.args)
+      script: |
+        if [ "$(workspaces.kubeconfig.bound)" == "true" ] && [[ -e $(workspaces.kubeconfig.path)/kubeconfig ]]; then
+          export KUBECONFIG=$(workspaces.kubeconfig.path)/kubeconfig
+        fi
+        $(params.script)
+        ls
