@@ -2,11 +2,12 @@ apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
   name: ko-pipeline
+  namespace: ko
 spec:
   workspaces:
     - name: shared-workspaces
     - name: kubeDir
-    - name: temp
+      optional: true
   tasks:
     - name: git-clone
       taskRef:
@@ -18,9 +19,9 @@ spec:
         - name: url
           value: https://github.com/tektoncd/hub
         - name: subdirectory
-          value: ''
+          value: ""
         - name: deleteExisting
-          value: 'true'
+          value: "true"
 
     - name: ko-00-config
       taskRef:
@@ -28,34 +29,17 @@ spec:
       workspaces:
         - name: source
           workspace: shared-workspaces
-        - name: temp
-          workspace: temp
       params:
         - name: imageRegistry
-          value: quay.io/ppunamiy
+          value: quay.io/skopeotest
         - name: contextDir
-          value: 'api/config'
+          value: "api/config"
         - name: script
-          value: ko resolve -f 00-config > $(workspaces.temp.path)/00-config.yaml
+          value: ko resolve -f 00-config > 00-config.yaml
+        - name: applyName
+          value: 00-config.yaml
       runAfter:
         - git-clone
-
-    - name: kubectl-config
-      taskRef:
-        name: kubernetes-actions
-      workspaces:
-        - name: manifest-dir
-          workspace: temp
-        - name: kubeconfig-dir
-          workspace: kubeDir
-      params:
-        - name: script
-          value: |
-            ls
-            cat 00-config.yaml
-            kubectl apply -f 00-config.yaml
-      runAfter:
-        - ko-00-config
 
     - name: ko-config
       taskRef:
@@ -67,8 +51,12 @@ spec:
         - name: imageRegistry
           value: quay.io/skopeotest
         - name: contextDir
-          value: 'api'
+          value: "api"
         - name: script
-          value: ko apply -f config
+          value: |
+            rm -rf config/00-config.yaml
+            ko resolve --platform=all --preserve-import-paths -f config > config.yaml
+        - name: applyName
+          value: config.yaml
       runAfter:
         - ko-00-config

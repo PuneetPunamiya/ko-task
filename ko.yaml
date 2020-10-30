@@ -2,6 +2,7 @@ apiVersion: tekton.dev/v1beta1
 kind: Task
 metadata:
   name: ko
+  namespace: ko
 spec:
   params:
     - name: imageRegistry
@@ -10,14 +11,15 @@ spec:
       type: string
     - name: script
       type: string
+    - name: applyName
+      type: string
   workspaces:
     - name: source
-    - name: temp
     - name: kubeconfig
       optional: true
   steps:
     - name: ko
-      image: gcr.io/tekton-releases/dogfooding/ko
+      image: gcr.io/tekton-releases/dogfooding/ko-gcloud:latest #gcr.io/tekton-releases/ko-ci
       workingDir: $(workspaces.source.path)/$(params.contextDir)
       env:
         - name: KO_DOCKER_REPO
@@ -25,7 +27,7 @@ spec:
         - name: GOPATH
           value: /workspace/go
         - name: GO111MODULE
-          value: 'off'
+          value: "off"
       # args:
       #   - $(params.args)
       script: |
@@ -34,3 +36,9 @@ spec:
         fi
         $(params.script)
         ls
+    - name: kubectl
+      image: gcr.io/cloud-builders/kubectl@sha256:8ab94be8b2b4f3d117f02d868b39540fddd225447abf4014f7ba4765cb39f753
+      workingDir: $(workspaces.source.path)/$(params.contextDir)
+      script: |
+        cat $(workspaces.source.path)/$(params.contextDir)/$(params.applyName)
+        kubectl apply -f $(params.applyName)

@@ -1,0 +1,31 @@
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: blue-green-cluster-role
+rules:
+  # Core API
+  - apiGroups: [""]
+    resources: ["*"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch", "apply"]
+  # Apps API
+  - apiGroups: ["apps"]
+    resources: ["*"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch", "apply"]
+  # Batch API
+  - apiGroups: ["batch"]
+    resources: ["*"]
+    verbs: ["get", "list", "create", "update", "delete", "patch", "watch", "apply"]
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: blue-green-binding
+subjects:
+  - kind: ServiceAccount
+    name: secret-service-account
+    namespace: ko
+roleRef:
+  kind: ClusterRole
+  name: blue-green-cluster-role
+  apiGroup: rbac.authorization.k8s.io
