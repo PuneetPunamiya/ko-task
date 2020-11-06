@@ -19,7 +19,7 @@ spec:
       optional: true
   steps:
     - name: ko
-      image: gcr.io/tekton-releases/dogfooding/ko-gcloud:latest #gcr.io/tekton-releases/ko-ci
+      image: quay.io/vinamra2807/ko@sha256:82a9041cfbe3ebf77a92e5248d69bc1ab62e979fc7779d85d5b3c1bd5fd08670 #gcr.io/tekton-releases/ko-ci
       workingDir: $(workspaces.source.path)/$(params.contextDir)
       env:
         - name: KO_DOCKER_REPO
